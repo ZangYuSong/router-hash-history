@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>router</title>
+</head>
+<router-view></router-view>
+
+<body>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="./router.js"></script>
+    <script>
+        var router = new Router({
+            modal: "hash" // hash 或者 history
+        });
+        router.otherwise("/index");
+        router
+            .state("index", {
+                "url": "/index",
+                "templateUrl": "/views/index.html"
+            })
+            .state("index.list", {
+                "url": "/list",
+                "templateUrl": "/views/list.html"
+            })
+            .state("index.list.content", {
+                "url": "/content",
+                "templateUrl": "/views/content.html"
+            })
+            .state("error", {
+                "url": "/error",
+                "templateUrl": "/views/error.html"
+            });
+        router.start();
+
+        function listGo(state) {
+            router.go(state);
+        }
+
+        function goBack(state) {
+            router.go(state);
+        }
+
+        function goContent(state) {
+            router.go(state);
+        }
+    </script>
+</body>
+
+</html>

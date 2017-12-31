@@ -11,7 +11,8 @@
 
 <body>
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-    <script src="./router.js"></script>
+    <!-- 使用history，我这里服务器的配置加载文件必须使用/开头 -->
+    <script src="/router.js"></script>
     <script>
         var router = new Router({
             modal: "hash" // hash 或者 history

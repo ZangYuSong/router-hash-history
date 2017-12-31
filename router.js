@@ -1,89 +1,106 @@
-(function(window) {
+(function (window) {
   window.Router = Router;
 
-  function Router(options) {
-    this.modal = options.modal || getRouterModal();
-    this._router = options.router || {};
+  function Router(modal) {
+    this._modal = modal || getRouterModal();
+    this._router = {};
     this._when = {};
     this._otherwise = "";
+    this.init();
   }
 
   Router.prototype = {
-    start: function(options) {
+    init: function () {
       var self = this;
-      initRouter(this._router);
-      if ("hash" === this.modal) {
-        window.addEventListener("hashchange", self.refresh.bind(self));
+      var listen = "";
+      if ("hash" === self._modal) {
+        listen = "hashchange";
+        self.go = hashEvent.go.bind(self);
+        self.refresh = hashEvent.refresh.bind(self);
       } else {
-        window.addEventListener("popstate", self.refresh.bind(self));
+        listen = "popstate";
+        self.go = historyEvent.go.bind(self);
+        self.refresh = historyEvent.refresh.bind(self);
       }
-      self.refresh();
+      window.addEventListener(listen, self.refresh.bind(self));
     },
-    refresh: function() {
-      if ("hash" === this.modal) {
-        this.refreshHash();
-      } else {
-        this.refreshHistory();
-      }
-    },
-    refreshHash: function() {
-      var hash = window.location.hash.slice(1);
-      var toHash = this.getRedirect(hash);
-      if (!toHash && this._otherwise) {
-        window.location.hash = "#" + this._otherwise;
-        return;
-      }
-      this.render();
-    },
-    refreshHistory: function() {
-      var url = window.location.pathname;
-      var toUrl = this.getRedirect(url);
-      if (!toUrl && this._otherwise) {
-        window.history.pushState(null, null, this._otherwise);
-      }
-      this.render();
-    },
-    state: function(state, options) {
+    state: function (state, options) {
       options.name = state;
       options.parent = state.split(".");
       this._router[state] = options;
       return this;
     },
-    otherwise: function(url) {
+    otherwise: function (url) {
       this._otherwise = url;
     },
-    when: function(url, toUrl) {
+    when: function (url, toUrl) {
       this._when[url] = toUrl;
       return this;
     },
-    go: function(state) {
-      if ("hash" === this.modal) {
-        window.location.hash = "#" + this._router[state].redirectUrl;
-      } else {
-        window.history.pushState(null, null, this._router[state].redirectUrl);
-        this.refresh();
-      }
+    start: function (options) {
+      initRouter(this._router);
+      this.refresh();
     },
-    getRedirect: function(url) {
-      var currentUrl = url;
-      each(this._when, function(val) {
-        if (currentUrl === val) {
-          currentUrl = val;
+    getRedirect: function (url) {
+      var current = {
+        url: url,
+        redirect: false
+      };
+      each(this._when, function (val, key) {
+        if (current.url === key) {
+          current.url = val;
+          current.redirect = true;
           return false;
         }
       });
       var flag = false;
-      each(this._router, function(val) {
-        if (currentUrl === val.redirectUrl) {
+      each(this._router, function (val) {
+        if (current.url === val.redirectUrl) {
           flag = true;
           return false;
         }
       });
-      return flag;
+      if (!flag) {
+        current.url = this._otherwise;
+        current.redirect = true;
+      };
+      return current;
     },
-    render: function() {
-      var el = { value: document };
-      setTemplate(getRouterState(this._router, this.modal), el);
+    render: function () {
+      var el = {
+        value: document
+      };
+      setTemplate(getRouterState(this._router, this._modal), el);
+    }
+  };
+
+  var hashEvent = {
+    go: function (state) {
+      window.location.hash = "#" + this._router[state].redirectUrl;
+    },
+    refresh: function () {
+      var url = window.location.hash.slice(1);
+      var current = this.getRedirect(url);
+      if (current.redirect) {
+        window.location.hash = "#" + current.url;
+        return;
+      }
+      this.render();
+    }
+  };
+
+  var historyEvent = {
+    go: function (state) {
+      window.history.pushState(null, null, this._router[state].redirectUrl);
+      this.refresh();
+    },
+    refresh: function () {
+      var url = window.location.pathname;
+      var current = this.getRedirect(url);
+      if (current.redirect) {
+        window.history.pushState(null, null, this._otherwise);
+      }
+      this.render();
     }
   };
 
@@ -106,9 +123,9 @@
    */
   function initRouter(router) {
     var redirectUrl = "";
-    each(router, function(val) {
+    each(router, function (val) {
       redirectUrl = "";
-      each(val.parent, function(state, key) {
+      each(val.parent, function (state, key) {
         redirectUrl += router[val.parent.slice(0, key + 1).join(".")].url;
       });
       val.redirectUrl = redirectUrl;
@@ -124,13 +141,13 @@
    */
   function getRouterState(router, modal) {
     var url =
-      "hash" === modal
-        ? window.location.hash.slice(1)
-        : window.location.pathname;
+      "hash" === modal ?
+      window.location.hash.slice(1) :
+      window.location.pathname;
     var array = [];
-    each(router, function(val) {
+    each(router, function (val) {
       if (url === val.redirectUrl) {
-        each(val.parent, function(state, key) {
+        each(val.parent, function (state, key) {
           array.push(router[val.parent.slice(0, key + 1).join(".")]);
         });
         return false;
@@ -151,15 +168,15 @@
       $.ajax({
         url: router.templateUrl,
         type: "GET",
-        success: function(data) {
+        success: function (data) {
           if (appendHTML(data, el)) {
             routers.length > 0 && setTemplate(routers, el);
           }
         }
       });
     } else if (router.template) {
-      if (appendHTML(router.template, v)) {
-        routers.length > 0 && setTemplate(routers, v);
+      if (appendHTML(router.template, el)) {
+        routers.length > 0 && setTemplate(routers, el);
       }
     }
   }
@@ -196,8 +213,8 @@
       value;
     if ("[object Array]" === Object.prototype.toString.call(obj)) {
       for (length = obj.length; i < length; i++) {
-        value = fn.call(context, obj[i], i, obj);
-        if (value === false) {
+        !fn.call(context, obj[i], i, obj);
+        if (false === value) {
           break;
         }
       }
@@ -205,7 +222,7 @@
       var keys = Object.keys(obj);
       for (length = keys.length; i < length; i++) {
         value = fn.call(context, obj[keys[i]], keys[i], obj);
-        if (value === false) {
+        if (false === value) {
           break;
         }
       }

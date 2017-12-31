@@ -1,0 +1,10 @@
+{
+  "name": "router-hash-history",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "ZangYuSong <1272695037@qq.com>",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.16.2"
+  }
+}

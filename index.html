@@ -17,7 +17,8 @@
         var router = new Router({
             modal: "hash" // hash 或者 history
         });
-        router.otherwise("/index");
+        router.otherwise("/error");
+        router.when("/", "/index");
         router
             .state("index", {
                 "url": "/index",

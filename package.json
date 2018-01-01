@@ -5,6 +5,7 @@
   "author": "ZangYuSong <1272695037@qq.com>",
   "license": "MIT",
   "dependencies": {
+    "eslint": "^4.14.0",
     "express": "^4.16.2"
   }
 }
